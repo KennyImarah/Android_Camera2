@@ -20,6 +20,7 @@ import android.media.ImageReader;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.HandlerThread;
+import android.os.Looper;
 import android.util.Log;
 import android.util.Size;
 import android.util.SparseIntArray;
@@ -43,17 +44,19 @@ import java.util.List;
 import java.util.logging.Handler;
 import java.util.logging.LogRecord;
 
+
+/* MainActivity class */
 public class MainActivity extends AppCompatActivity {
 
-    private Size previewsize;
-    private Size jpegSizes[] = null;
-    private TextureView textureView;
-    private CameraDevice cameraDevice;
-    private CaptureRequest.Builder previewBuilder;
-    private CameraCaptureSession previewSession;
-    Button getpicture;
+    private Size previewsize;                              // previewsize object
+    private Size jpegSizes[] = null;                       // jpegSize array object
+    private TextureView textureView;                       // textureView object
+    private CameraDevice cameraDevice;                     // cameraDevice object
+    private CaptureRequest.Builder previewBuilder;         // previewBuilder object
+    private CameraCaptureSession previewSession;           // previewSession object
+    Button getpicture;                                     // getpicture object
 
-    private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
+    private static final SparseIntArray ORIENTATIONS = new SparseIntArray();        // ORIENTATIONS objects
 
 
     static {
@@ -64,64 +67,63 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+    protected void onCreate(Bundle savedInstanceState) {                            // onCreate method
+        super.onCreate(savedInstanceState);                                         // savedInstanceState called on  onCreate super
+        setContentView(R.layout.activity_main);                                     // setContentView with activity_main layout
 
-        textureView = (TextureView) findViewById(R.id.textureview);
+        textureView = (TextureView) findViewById(R.id.textureview);                 // textureview from xml assigned to textureView
 
-        textureView.setSurfaceTextureListener(surfaceTextureListener);
+        textureView.setSurfaceTextureListener(surfaceTextureListener);              // surfaceTextureListener set on textureView
 
-        getpicture = (Button) findViewById(R.id.getpicture);
+        getpicture = (Button) findViewById(R.id.getpicture);                        // getpicture assigned view getpicture button xml
 
-        getpicture.setOnClickListener(new View.OnClickListener() {
+        getpicture.setOnClickListener(new View.OnClickListener() {                  // getpicture setOnClickListener
             @Override
-            public void onClick(View v) {
-                getPicture();
+            public void onClick(View v) {                                           // onClick method
+                getPicture();                                                       // getPicture method called
             }
         });
     }
 
-    void getPicture() {
-        if (cameraDevice == null) {
+    void getPicture() {                                                             // getPicture method
+        if (cameraDevice == null) {                                                 // check if cameraDevice is available
             return;
         }
-
-        CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
-
+        CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);    // create CameraManager object and assign CAMERA_SERVICE
 
         try {
-            CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraDevice.getId());
+            CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraDevice.getId());   // CameraCharacteristics object and assignment
 
 
-            if (characteristics != null) {
+            if (characteristics != null) {   // if characteristics not empty
 
-                jpegSizes = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP).getOutputSizes(ImageFormat.JPEG);
+                jpegSizes = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP).getOutputSizes(ImageFormat.JPEG);  // set image format
             }
 
+
             int width = 640, heigth = 480;
-            if (jpegSizes != null && jpegSizes.length > 0) {
+            if (jpegSizes != null && jpegSizes.length > 0) {  // if jpegSizes not empty
                 width = jpegSizes[0].getWidth();
                 heigth = jpegSizes[0].getHeight();
             }
-            ImageReader reader = ImageReader.newInstance(width, heigth, ImageFormat.JPEG, 1);
+            ImageReader reader = ImageReader.newInstance(width, heigth, ImageFormat.JPEG, 1);  // ImageReader object assigned new instance
 
-            List<Surface> outputSurfaces = new ArrayList<Surface>(2);
-            outputSurfaces.add(reader.getSurface());
-            outputSurfaces.add(new Surface(textureView.getSurfaceTexture()));
+            List<Surface> outputSurfaces = new ArrayList<Surface>(2);   // outputSurfaces ArrayList object
+            outputSurfaces.add(reader.getSurface());                                 // outputSurfaces added ImageReader object
+            outputSurfaces.add(new Surface(textureView.getSurfaceTexture()));        // outputSurfaces added surface textureView
 
 
-            final CaptureRequest.Builder captureBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
-            captureBuilder.addTarget(reader.getSurface());
-            captureBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
+            final CaptureRequest.Builder captureBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);  // captureBuilder object assigned
+            captureBuilder.addTarget(reader.getSurface());                            // captureBuilder assigned target surface
+            captureBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);  // captureBuilder set CONTROL_MODE
 
-            int rotation = getWindowManager().getDefaultDisplay().getRotation();
+            int rotation = getWindowManager().getDefaultDisplay().getRotation();    // rotation object assigned
 
-            captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, ORIENTATIONS.get(rotation));
+            captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, ORIENTATIONS.get(rotation));    // captureBuilder set capture request
 
-            ImageReader.OnImageAvailableListener imageAvailableListener = new ImageReader.OnImageAvailableListener() {
+            ImageReader.OnImageAvailableListener imageAvailableListener = new ImageReader.OnImageAvailableListener() {   // imageAvailableListener
                 @Override
-                public void onImageAvailable(ImageReader reader) {
+                public void onImageAvailable(ImageReader reader) {           //  onImageAvailable method
                     Image image = null;
                     try {
                         image = reader.acquireLatestImage();
@@ -163,7 +165,7 @@ public class MainActivity extends AppCompatActivity {
 
             handlerThread.start();
 
-            final Handler handler = new Handler(handlerThread.getLooper());
+            final Handler handler = new Handler(Looper.getMainLooper());
 
             reader.setOnImageAvailableListener(imageAvailableListener, handler);
 
